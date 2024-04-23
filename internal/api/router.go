@@ -29,12 +29,11 @@ func NewRouter(
 	if readOnly {
 		mux.Use(ReadOnly)
 	}
-	v2Router := v2.NewRouter(backend, healthController, globalMetricsRegistry, a)
-	mux.Handle("/v2*", http.StripPrefix("/v2", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		chi.RouteContext(r.Context()).Reset()
-		v2Router.ServeHTTP(w, r)
-	})))
-	mux.Handle("/*", v1.NewRouter(backend, healthController, globalMetricsRegistry, a))
+	mux.Route("/api/ledger", func(r chi.Router) {
+		v2Router := v2.NewRouter(backend, healthController, globalMetricsRegistry, a)
+		r.Mount("/v2", v2Router)
+		r.Mount("/", v1.NewRouter(backend, healthController, globalMetricsRegistry, a))
+	})
 
 	return mux
 }
